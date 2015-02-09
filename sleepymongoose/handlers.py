@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# noinspection PyPackageRequirements
 from bson.son import SON
-# from pymongo import Connection, ASCENDING, DESCENDING
-# from pymongo.errors import ConnectionFailure, ConfigurationError, OperationFailure, AutoReconnect
-# from bson import json_util
+# noinspection PyPackageRequirements
+from bson import json_util
+from pymongo import Connection, ASCENDING, DESCENDING
+from pymongo.errors import ConnectionFailure, ConfigurationError, OperationFailure, AutoReconnect
 
 import re
 
