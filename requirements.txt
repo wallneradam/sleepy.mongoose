@@ -1,1 +1,3 @@
+bson
+simplejson
 pymongo
