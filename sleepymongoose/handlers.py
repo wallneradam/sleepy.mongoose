@@ -201,6 +201,23 @@ class MongoHandler:
         else:
             out('{"ok" : 1}')
 
+    # noinspection PyUnusedLocal
+    def _disconnect(self, args, out, name=None, db=None, collection=None):
+        """
+        disconnect from the database
+        """
+        conn = self._get_connection(name)
+        if conn is None:
+            out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
+            return
+
+        conn.disconnect()
+        del self.connections[name]
+
+        out('{"ok" : 1}')
+
+        print out
+
     def _find(self, args, out, name=None, db=None, collection=None):
         """
         query the database.

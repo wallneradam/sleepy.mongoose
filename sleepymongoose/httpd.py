@@ -153,7 +153,6 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
 
         if method == "POST":
             if 'Content-Type' in self.headers:
-                print args
                 pargs = cgi.FieldStorage(fp=self.rfile, headers=self.headers,
                                          environ={'REQUEST_METHOD': 'POST',
                                                   'CONTENT_TYPE': self.headers['Content-Type']})
