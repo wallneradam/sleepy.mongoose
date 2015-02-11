@@ -216,8 +216,6 @@ class MongoHandler:
 
         out('{"ok" : 1}')
 
-        print out
-
     def _find(self, args, out, name=None, db=None, collection=None):
         """
         query the database.
