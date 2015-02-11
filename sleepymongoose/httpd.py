@@ -108,10 +108,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
 
         name = None
         if "name" in args:
-            if type(args).__name__ == "dict":
-                name = args["name"][0]
-            else:
-                name = args.getvalue("name")
+            name = args["name"]
 
         self.jsonp_callback = None
         if "callback" in args:
@@ -147,7 +144,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
         # Parse GET parameters
         (uri, q, args) = self.path.partition('?')
         if len(args):
-            args = urlparse.parse_qs(args)
+            args = dict(urlparse.parse_qsl(args))
         else:
             args = {}
 
@@ -158,7 +155,9 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
                                                   'CONTENT_TYPE': self.headers['Content-Type']})
                 # Convert to args
                 for k in pargs.keys():
-                    args[k] = pargs.getlist(k)
+                    args[k] = pargs.getvalue(k)
+
+                print args
             else:
                 self.send_response(100, "Continue")
                 self.send_header('Content-type', MongoHTTPRequest.mimetypes['json'])

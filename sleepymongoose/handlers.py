@@ -97,7 +97,7 @@ class MongoHandler:
         try:
             obj = json.loads(s, object_hook=json_util.object_hook)
         except (ValueError, TypeError):
-            out('{"ok" : 0, "errmsg" : "couldn\'t parse json: %s"}' % s)
+            out('{"ok" : 0, "errmsg" : "couldn\'t parse json: %s"}' % str(s).replace('"', '\\"'))
             return None
 
         if not getattr(obj, '__iter__', False):
