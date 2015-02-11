@@ -36,7 +36,7 @@ class MongoHandler:
         self.connections = {}
 
         for host in mongos:
-            args = MongoFakeFieldStorage({"server": host})
+            args = {"server": host}
 
             out = MongoFakeStream()
             if len(mongos) == 1:
@@ -116,7 +116,7 @@ class MongoHandler:
             out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
             return
 
-        cmd = self._get_son(args.getvalue('cmd'), out)
+        cmd = self._get_son(args['cmd'], out)
         if cmd is None:
             return
 
@@ -132,7 +132,7 @@ class MongoHandler:
 
         # debugging
         if result['ok'] == 0:
-            result['cmd'] = args.getvalue('cmd')
+            result['cmd'] = args['cmd']
 
         out(json.dumps(result, default=json_util.default))
 
@@ -157,14 +157,9 @@ class MongoHandler:
         """
         connect to a mongod
         """
-
-        if type(args).__name__ == 'dict':
-            out('{"ok" : 0, "errmsg" : "_connect must be a POST request"}')
-            return
-
         if "server" in args:
             try:
-                uri = args.getvalue('server')
+                uri = args['server']
             except Exception, e:
                 print e
                 out('{"ok" : 0, "errmsg" : "invalid server uri given"}')
@@ -186,11 +181,6 @@ class MongoHandler:
         """
         authenticate to the database.
         """
-
-        if type(args).__name__ == 'dict':
-            out('{"ok" : 0, "errmsg" : "_find must be a POST request"}')
-            return
-
         conn = self._get_connection(name)
         if conn is None:
             out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
@@ -206,7 +196,7 @@ class MongoHandler:
         if 'password' not in args:
             out('{"ok" : 0, "errmsg" : "password must be defined"}')
 
-        if not conn[db].authenticate(args.getvalue('username'), args.getvalue('password')):
+        if not conn[db].authenticate(args['username'], args['password']):
             out('{"ok" : 0, "errmsg" : "authentication failed"}')
         else:
             out('{"ok" : 1}')
@@ -215,11 +205,6 @@ class MongoHandler:
         """
         query the database.
         """
-
-        if type(args).__name__ != 'dict':
-            out('{"ok" : 0, "errmsg" : "_find must be a GET request"}')
-            return
-
         conn = self._get_connection(name)
         if conn is None:
             out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
@@ -290,11 +275,6 @@ class MongoHandler:
         """
         Get more results from a cursor
         """
-
-        if type(args).__name__ != 'dict':
-            out('{"ok" : 0, "errmsg" : "_more must be a GET request"}')
-            return
-
         if 'id' not in args:
             out('{"ok" : 0, "errmsg" : "no cursor id given"}')
             return
@@ -339,11 +319,6 @@ class MongoHandler:
         """
         insert a doc
         """
-
-        if type(args).__name__ == 'dict':
-            out('{"ok" : 0, "errmsg" : "_insert must be a POST request"}')
-            return
-
         conn = self._get_connection(name)
         if conn is None:
             out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
@@ -357,13 +332,13 @@ class MongoHandler:
             out('{"ok" : 0, "errmsg" : "missing docs"}')
             return
 
-        docs = self._get_son(args.getvalue('docs'), out)
+        docs = self._get_son(args['docs'], out)
         if docs is None:
             return
 
         safe = False
         if "safe" in args:
-            safe = bool(args.getvalue("safe"))
+            safe = bool(args['safe'])
 
         result = {'oids': conn[db][collection].insert(docs)}
         if safe:
@@ -374,7 +349,7 @@ class MongoHandler:
     def __safety_check(self, args, out, db):
         safe = False
         if "safe" in args:
-            safe = bool(args.getvalue("safe"))
+            safe = bool(args['safe'])
 
         if safe:
             result = db.last_status()
@@ -386,11 +361,6 @@ class MongoHandler:
         """
         update a doc
         """
-
-        if type(args).__name__ == 'dict':
-            out('{"ok" : 0, "errmsg" : "_update must be a POST request"}')
-            return
-
         conn = self._get_connection(name)
         if conn is None:
             out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
@@ -403,24 +373,24 @@ class MongoHandler:
         if "criteria" not in args:
             out('{"ok" : 0, "errmsg" : "missing criteria"}')
             return
-        criteria = self._get_son(args.getvalue('criteria'), out)
+        criteria = self._get_son(args['criteria'], out)
         if criteria is None:
             return
 
         if "newobj" not in args:
             out('{"ok" : 0, "errmsg" : "missing newobj"}')
             return
-        newobj = self._get_son(args.getvalue('newobj'), out)
+        newobj = self._get_son(args['newobj'], out)
         if None == newobj:
             return
 
         upsert = False
         if "upsert" in args:
-            upsert = bool(args.getvalue('upsert'))
+            upsert = bool(args['upsert'])
 
         multi = False
         if "multi" in args:
-            multi = bool(args.getvalue('multi'))
+            multi = bool(args['multi'])
 
         conn[db][collection].update(criteria, newobj, upsert=upsert, multi=multi)
 
@@ -430,11 +400,6 @@ class MongoHandler:
         """
         remove docs
         """
-
-        if type(args).__name__ == 'dict':
-            out('{"ok" : 0, "errmsg" : "_remove must be a POST request"}')
-            return
-
         conn = self._get_connection(name)
         if conn is None:
             out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
@@ -446,7 +411,7 @@ class MongoHandler:
 
         criteria = {}
         if "criteria" in args:
-            criteria = self._get_son(args.getvalue('criteria'), out)
+            criteria = self._get_son(args['criteria'], out)
             if criteria is None:
                 return
 
@@ -459,12 +424,7 @@ class MongoHandler:
         """
         batch process commands
         """
-
-        if type(args).__name__ == 'dict':
-            out('{"ok" : 0, "errmsg" : "_batch must be a POST request"}')
-            return
-
-        requests = self._get_son(args.getvalue('requests'), out)
+        requests = self._get_son(args['requests'], out)
         if requests is None:
             return
 
@@ -495,9 +455,6 @@ class MongoHandler:
                 if 'name' in args:
                     name = args['name']
 
-            if method == "POST":
-                args = MongoFakeFieldStorage(args)
-
             func = getattr(MongoHandler.mh, cmd, None)
             if callable(func):
                 output = MongoFakeStream()
@@ -522,14 +479,3 @@ class MongoFakeStream:
 
     def get_ostream(self):
         return self.str
-
-
-class MongoFakeFieldStorage:
-    def __init__(self, args):
-        self.args = args
-
-    def getvalue(self, key):
-        return self.args[key]
-
-    def __contains__(self, key):
-        return key in self.args

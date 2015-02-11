@@ -144,14 +144,22 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
 
     # TODO: check for ..s
     def process_uri(self, method):
-        if method == "GET":
-            (uri, q, args) = self.path.partition('?')
+        # Parse GET parameters
+        (uri, q, args) = self.path.partition('?')
+        if len(args):
+            args = urlparse.parse_qs(args)
         else:
-            uri = self.path
+            args = {}
+
+        if method == "POST":
             if 'Content-Type' in self.headers:
-                args = cgi.FieldStorage(fp=self.rfile, headers=self.headers,
-                                        environ={'REQUEST_METHOD': 'POST',
-                                                 'CONTENT_TYPE': self.headers['Content-Type']})
+                print args
+                pargs = cgi.FieldStorage(fp=self.rfile, headers=self.headers,
+                                         environ={'REQUEST_METHOD': 'POST',
+                                                  'CONTENT_TYPE': self.headers['Content-Type']})
+                # Convert to args
+                for k in pargs.keys():
+                    args[k] = pargs.getlist(k)
             else:
                 self.send_response(100, "Continue")
                 self.send_header('Content-type', MongoHTTPRequest.mimetypes['json'])
@@ -200,14 +208,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
 
                 return
 
-        # make sure args is an array of tuples
-        if len(args) != 0:
-            args = urlparse.parse_qs(args)
-        else:
-            args = {}
-
         self.call_handler(uri, args)
-        # self.wfile.write( self.path )
 
     def do_POST(self):
         (uri, args, t) = self.process_uri("POST")
@@ -220,7 +221,7 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
         global server
 
         print "\n================================="
-        print "|      MongoDB REST Server      |"
+        print "|      MongoDB HTTP Server      |"
         print "=================================\n"
 
         if HTTPSServer.pem is None:
@@ -250,11 +251,11 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
 
 
 class MongoHTTPSRequest(MongoHTTPRequest):
-    def __init__(self, request, client_address, server):
+    def __init__(self, request, client_address, _server):
         self.connection = None
         self.rfile = None
         self.wfile = None
-        MongoHTTPRequest.__init__(self, request, client_address, server)
+        MongoHTTPRequest.__init__(self, request, client_address, _server)
 
     # noinspection PyProtectedMember
     def setup(self):
@@ -315,6 +316,7 @@ def main():
         sys.exit(2)
 
     MongoHTTPRequest.serve_forever(MongoHTTPRequest.host, MongoHTTPRequest.port)
+
 
 if __name__ == "__main__":
     main()
