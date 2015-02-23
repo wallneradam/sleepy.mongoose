@@ -1,4 +1,4 @@
-# Copyright 2009-2010 10gen, Inc.
+# Copyright 2009-2015 10gen, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Modified by Adam Wallner - Bitbaro Mobile kft
 
 from SocketServer import BaseServer
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
@@ -156,8 +158,6 @@ class MongoHTTPRequest(BaseHTTPRequestHandler):
                 # Convert to args
                 for k in pargs.keys():
                     args[k] = pargs.getvalue(k)
-
-                print args
             else:
                 self.send_response(100, "Continue")
                 self.send_header('Content-type', MongoHTTPRequest.mimetypes['json'])

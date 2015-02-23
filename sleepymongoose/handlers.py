@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Modified by Adam Wallner - Bitbaro Mobile kft
 
 # noinspection PyPackageRequirements
 from bson.son import SON
@@ -25,6 +27,10 @@ try:
     import json
 except ImportError:
     import simplejson as json
+
+
+def esc(s):
+    return str(s).replace('"', '\\"')
 
 
 class MongoHandler:
@@ -93,15 +99,15 @@ class MongoHandler:
         else:
             return json_util.object_hook(obj)
 
-    def _get_son(self, s, out):
+    def _get_json(self, s, out):
         try:
             obj = json.loads(s, object_hook=json_util.object_hook)
         except (ValueError, TypeError):
-            out('{"ok" : 0, "errmsg" : "couldn\'t parse json: %s"}' % str(s).replace('"', '\\"'))
+            out('{"ok": 0, "errmsg": "couldn\'t parse json: %s"}' % esc(s))
             return None
 
         if not getattr(obj, '__iter__', False):
-            out('{"ok" : 0, "errmsg" : "type is not iterable: %s"}' % s)
+            out('{"ok": 0, "errmsg": "type is not iterable: %s"}' % s)
             return None
 
         return obj
@@ -113,21 +119,21 @@ class MongoHandler:
 
         conn = self._get_connection(name)
         if conn is None:
-            out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
+            out('{"ok": 0, "errmsg": "couldn\'t get connection to mongo"}')
             return
 
-        cmd = self._get_son(args['cmd'], out)
+        cmd = self._get_json(args['cmd'], out)
         if cmd is None:
             return
 
         try:
             result = conn[db].command(cmd, check=False)
         except AutoReconnect:
-            out('{"ok" : 0, "errmsg" : "wasn\'t connected to the db and ' +
-                'couldn\'t reconnect", "name" : "%s"}' % name)
+            out('{"ok": 0, "errmsg": "wasn\'t connected to the db and ' +
+                'couldn\'t reconnect", "name": "%s"}' % name)
             return
         except (OperationFailure, error):
-            out('{"ok" : 0, "errmsg" : "%s"}' % error)
+            out('{"ok": 0, "errmsg": "%s"}' % error)
             return
 
         # debugging
@@ -138,7 +144,7 @@ class MongoHandler:
 
     # noinspection PyUnusedLocal
     def _hello(self, args, out, name=None, db=None, collection=None):
-        out('{"ok" : 1, "msg" : "Uh, we had a slight weapons malfunction, but ' +
+        out('{"ok": 1, "msg": "Uh, we had a slight weapons malfunction, but ' +
             'uh... everything\'s perfectly all right now. We\'re fine. We\'re ' +
             'all fine here now, thank you. How are you?"}')
         return
@@ -162,7 +168,7 @@ class MongoHandler:
                 uri = args['server']
             except Exception, e:
                 print e
-                out('{"ok" : 0, "errmsg" : "invalid server uri given"}')
+                out('{"ok": 0, "errmsg": "invalid server uri given"}')
                 return
         else:
             uri = 'mongodb://localhost:27017'
@@ -172,9 +178,9 @@ class MongoHandler:
 
         conn = self._get_connection(name, uri)
         if conn is not None:
-            out('{"ok" : 1, "server" : "%s", "name" : "%s"}' % (uri, name))
+            out('{"ok": 1, "server": "%s", "name": "%s"}' % (uri, name))
         else:
-            out('{"ok" : 0, "errmsg" : "could not connect", "server" : "%s", "name" : "%s"}' % (uri, name))
+            out('{"ok": 0, "errmsg": "could not connect", "server": "%s", "name": "%s"}' % (uri, name))
 
     # noinspection PyUnusedLocal
     def _authenticate(self, args, out, name=None, db=None, collection=None):
@@ -183,23 +189,23 @@ class MongoHandler:
         """
         conn = self._get_connection(name)
         if conn is None:
-            out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
+            out('{"ok": 0, "errmsg": "couldn\'t get connection to mongo"}')
             return
 
         if db is None:
-            out('{"ok" : 0, "errmsg" : "db must be defined"}')
+            out('{"ok": 0, "errmsg": "db must be defined"}')
             return
 
         if 'username' not in args:
-            out('{"ok" : 0, "errmsg" : "username must be defined"}')
+            out('{"ok": 0, "errmsg": "username must be defined"}')
 
         if 'password' not in args:
-            out('{"ok" : 0, "errmsg" : "password must be defined"}')
+            out('{"ok": 0, "errmsg": "password must be defined"}')
 
         if not conn[db].authenticate(args['username'], args['password']):
-            out('{"ok" : 0, "errmsg" : "authentication failed"}')
+            out('{"ok": 0, "errmsg": "authentication failed"}')
         else:
-            out('{"ok" : 1}')
+            out('{"ok": 1}')
 
     # noinspection PyUnusedLocal
     def _disconnect(self, args, out, name=None, db=None, collection=None):
@@ -208,13 +214,13 @@ class MongoHandler:
         """
         conn = self._get_connection(name)
         if conn is None:
-            out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
+            out('{"ok": 0, "errmsg": "couldn\'t get connection to mongo"}')
             return
 
         conn.disconnect()
         del self.connections[name]
 
-        out('{"ok" : 1}')
+        out('{"ok": 1}')
 
     def _find(self, args, out, name=None, db=None, collection=None):
         """
@@ -222,22 +228,22 @@ class MongoHandler:
         """
         conn = self._get_connection(name)
         if conn is None:
-            out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
+            out('{"ok": 0, "errmsg": "couldn\'t get connection to mongo"}')
             return
 
         if db is None or collection is None:
-            out('{"ok" : 0, "errmsg" : "db and collection must be defined"}')
+            out('{"ok": 0, "errmsg": "db and collection must be defined"}')
             return
 
         criteria = {}
         if 'criteria' in args:
-            criteria = self._get_son(args['criteria'][0], out)
+            criteria = self._get_json(args['criteria'][0], out)
             if None == criteria:
                 return
 
         fields = None
         if 'fields' in args:
-            fields = self._get_son(args['fields'][0], out)
+            fields = self._get_json(args['fields'][0], out)
             if fields is None:
                 return
 
@@ -252,7 +258,7 @@ class MongoHandler:
         cursor = conn[db][collection].find(spec=criteria, fields=fields, limit=limit, skip=skip)
 
         if 'sort' in args:
-            sort = self._get_son(args['sort'][0], out)
+            sort = self._get_json(args['sort'][0], out)
             if sort is None:
                 return
 
@@ -291,14 +297,14 @@ class MongoHandler:
         Get more results from a cursor
         """
         if 'id' not in args:
-            out('{"ok" : 0, "errmsg" : "no cursor id given"}')
+            out('{"ok": 0, "errmsg": "no cursor id given"}')
             return
 
         _id = int(args["id"][0])
         cursors = getattr(self, "cursors")
 
         if _id not in cursors:
-            out('{"ok" : 0, "errmsg" : "couldn\'t find the cursor with id %d"}' % _id)
+            out('{"ok": 0, "errmsg": "couldn\'t find the cursor with id %d"}' % _id)
             return
 
         cursor = cursors[_id]
@@ -336,18 +342,18 @@ class MongoHandler:
         """
         conn = self._get_connection(name)
         if conn is None:
-            out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
+            out('{"ok": 0, "errmsg": "couldn\'t get connection to mongo"}')
             return
 
         if db is None or collection is None:
-            out('{"ok" : 0, "errmsg" : "db and collection must be defined"}')
+            out('{"ok": 0, "errmsg": "db and collection must be defined"}')
             return
 
         if "docs" not in args:
-            out('{"ok" : 0, "errmsg" : "missing docs"}')
+            out('{"ok": 0, "errmsg": "missing docs"}')
             return
 
-        docs = self._get_son(args['docs'], out)
+        docs = self._get_json(args['docs'], out)
         if docs is None:
             return
 
@@ -370,7 +376,7 @@ class MongoHandler:
             result = db.last_status()
             out(json.dumps(result, default=json_util.default))
         else:
-            out('{"ok" : 1}')
+            out('{"ok": 1}')
 
     def _update(self, args, out, name=None, db=None, collection=None):
         """
@@ -378,25 +384,11 @@ class MongoHandler:
         """
         conn = self._get_connection(name)
         if conn is None:
-            out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
+            out('{"ok": 0, "errmsg": "couldn\'t get connection to mongo"}')
             return
 
         if db is None or collection is None:
-            out('{"ok" : 0, "errmsg" : "db and collection must be defined"}')
-            return
-
-        if "criteria" not in args:
-            out('{"ok" : 0, "errmsg" : "missing criteria"}')
-            return
-        criteria = self._get_son(args['criteria'], out)
-        if criteria is None:
-            return
-
-        if "newobj" not in args:
-            out('{"ok" : 0, "errmsg" : "missing newobj"}')
-            return
-        newobj = self._get_son(args['newobj'], out)
-        if None == newobj:
+            out('{"ok": 0, "errmsg": "db and collection must be defined"}')
             return
 
         upsert = False
@@ -407,9 +399,43 @@ class MongoHandler:
         if "multi" in args:
             multi = bool(args['multi'])
 
-        conn[db][collection].update(criteria, newobj, upsert=upsert, multi=multi)
+        newobj = None
+        if "newobj" in args:
+            newobj = self._get_json(args['newobj'], out)
+        if newobj is None:
+            out('{"ok": 0, "errmsg": "missing newobj"}')
+            return
+
+        collection = conn[db][collection]
+
+        criteria = None
+        if "criteria" not in args:
+            criteria = self._get_json(args['criteria'], out)
+        if upsert and not multi and criteria is None:
+            # Get the criteria from the object and indices
+            ii = collection.index_information()
+            criteria = {}
+            for (ik, o) in ii.items():
+                if ik == '_id_' or 'unique' in o and o['unique']:
+                    key = o['key']
+                    for k in dict(key):
+                        if k in newobj:
+                            criteria[k] = newobj[k]
+
+        if not criteria:
+            out('{"ok": 0, "errmsg": "missing criteria"}')
+            return
+
+        collection.update(criteria, newobj, upsert=upsert, multi=multi)
 
         self.__safety_check(args, out, conn[db])
+
+    def _insert_or_update(self, args, out, name=None, db=None, collection=None):
+        """
+        insert or update a document in the DB
+        """
+        args['upsert'] = 1
+        self._update(args, out, name, db, collection)
 
     def _remove(self, args, out, name=None, db=None, collection=None):
         """
@@ -417,16 +443,16 @@ class MongoHandler:
         """
         conn = self._get_connection(name)
         if conn is None:
-            out('{"ok" : 0, "errmsg" : "couldn\'t get connection to mongo"}')
+            out('{"ok": 0, "errmsg": "couldn\'t get connection to mongo"}')
             return
 
         if db is None or collection is None:
-            out('{"ok" : 0, "errmsg" : "db and collection must be defined"}')
+            out('{"ok": 0, "errmsg": "db and collection must be defined"}')
             return
 
         criteria = {}
         if "criteria" in args:
-            criteria = self._get_son(args['criteria'], out)
+            criteria = self._get_json(args['criteria'], out)
             if criteria is None:
                 return
 
@@ -439,7 +465,7 @@ class MongoHandler:
         """
         batch process commands
         """
-        requests = self._get_son(args['requests'], out)
+        requests = self._get_json(args['requests'], out)
         if requests is None:
             return
 
@@ -483,6 +509,36 @@ class MongoHandler:
                 continue
 
         out("]")
+
+    def _ensure_index(self, args, out, name=None, db=None, collection=None):
+        """
+        Ensure if the collection has index, if not it will be created, if yes, the result will be cached
+        """
+        conn = self._get_connection(name)
+        if conn is None:
+            out('{"ok": 0, "errmsg": "couldn\'t get connection to mongo"}')
+            return
+
+        if db is None or collection is None:
+            out('{"ok": 0, "errmsg": "db and collection must be defined"}')
+            return
+
+        keys = None
+        if "keys" in args:
+            keys = self._get_json(args['keys'], out)
+        if keys is None:
+            out('{"ok": 0, "errmsg": "missing keys"}')
+            return
+
+        options = {}
+        if "options" in args:
+            options = self._get_json(args['options'], out)
+
+        try:
+            name = conn[db][collection].ensure_index(keys.items(), **options)
+            out('{"ok": 1, "name": "%s"}' % name)
+        except Exception, e:
+            out('{"ok": 0, "errmsg": "%s"}' % esc(e.message))
 
 
 class MongoFakeStream:
